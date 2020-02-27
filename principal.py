@@ -4,3 +4,8 @@
 # -- mantiene: Alejandra Cortes
 # -- repositorio: https://github.com/alecortees22/LAB_2_ACS
 # -- ------------------------------------------------------------------------------------ -- #
+
+import funciones as fn
+datos = fn.f_leer_archivo(param_archivo='Statement_1.xlsx')
+
+pip_size = fn.f_pip_size(param_ins='eurusd')
