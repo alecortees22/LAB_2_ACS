@@ -24,7 +24,7 @@ def f_leer_archivo(param_archivo):
 
 # Transformar a minusculas
 def f_pip_size(param_ins):
-    inst = param_ins.lower()
+    inst = param_ins
     # Lista de pips por instrumento
     pips_inst = {'usdjpy-2': 100, 'eurusd-2': 10000, 'eurcad-2': 10000}
 

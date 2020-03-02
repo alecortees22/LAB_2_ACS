@@ -6,6 +6,9 @@
 # -- ------------------------------------------------------------------------------------ -- #
 
 import funciones as fn
-datos = fn.f_leer_archivo(param_archivo='Statement_1.xlsx')
+df_data = fn.f_leer_archivo(param_archivo='Statement_1.xlsx')
 
-pip_size = fn.f_pip_size(param_ins='eurusd-2')
+df_data = fn.f_pip_size(df_data)
+#df_data = fn.f_columns_dats(df_data)
+
+#tiempo = fn.f_columns_datos(param_data=)
