@@ -8,4 +8,4 @@
 import funciones as fn
 datos = fn.f_leer_archivo(param_archivo='Statement_1.xlsx')
 
-pip_size = fn.f_pip_size(param_ins='eurusd')
+pip_size = fn.f_pip_size(param_ins='eurusd-2')

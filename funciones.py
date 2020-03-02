@@ -9,26 +9,26 @@ import pandas as pd
 # ----------------- Funcion para mandar llamar archivo y acomodarlo a mi conveniencia--------------
 def f_leer_archivo(param_archivo):
     param_archivo = 'Statement_1.xlsx'
-    df_data = pd.read_excel('archivos/'+ param_archivo, sheet_name='Statement')
+    df_data = pd.read_excel('archivos/' + param_archivo, sheet_name='Statement')
+    # elegir solo renglones en los que la columna type == buy | type == 'sell'
+    df_data = df_data.loc[df_data['type']!='balance']
     # para poner en minusculas los titulos de las columnas de mi archivo
     df_data_columns = [list(df_data.columns)[i].lower() for i in range(0, len(df_data.columns))]
 
     # asegurar que ciertas columnas son del tipo numerico_
     # Cambiar tipo de datos en columnas a numerico
-    numcols = ['s/l', 't/p', 'commission', 'closetime', 'profit', ' size', 'swap', 'taxes', 'order']
+    numcols = ['order', 's/l', 't/p', 'closeprice', 'commission', 'size', 'taxes', 'swap', 'profit', 'openprice']
     df_data[numcols] = df_data[numcols].apply(pd.to_numeric)
 
     return df_data
 
 # Transformar a minusculas
 def f_pip_size(param_ins):
-    inst = param_ins('-2', '')
-    inst = inst.lower()
-
+    inst = param_ins.lower()
     # Lista de pips por instrumento
-    pips_inst = {'usdjpy': 100, 'eurusd': 10000, 'eurcad': 10000}
+    pips_inst = {'usdjpy-2': 100, 'eurusd-2': 10000, 'eurcad-2': 10000}
 
-    return pips_inst(inst)
+    return pips_inst[inst]
 
 def f_columns_datos(param_data):
     param_data['closetime'] = pd.to_datetime(param_data['closetime'])
