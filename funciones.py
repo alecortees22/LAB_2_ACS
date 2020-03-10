@@ -41,11 +41,12 @@ def f_columns_datos(param_data):
     return param_data
 
 def f_columns_pips(param_data):
-    if param_data['type'] == 'buy':
-        param_data['pips'] = [(param_data.loc[i, 'closeprice'] - param_data.loc[i, 'openprice'])*multiplicador
-                              for i in param_data.index]
-    else:
-        param_data['pips'] = [(param_data.loc[i, 'openprice'] - param_data.loc[i, 'closeprice']) * multiplicador
-                              for i in param_data.index]
-
-    return 1
+    def pips_by_trade(trade):
+        pips = 0
+        if trade['type'] == "buy":
+            pips = (trade['closeprice'] - trade['openprice']) * f_pip_size(trade['symbol'])
+        else:
+            pips = (trade['openprice'] - trade['closeprice']) * f_pip_size(trade['symbol'])
+        return pips
+    param_data['pips'] = list([pips_by_trade(param_data.iloc[i]) for i in range(len(param_data))])
+    return param_data
