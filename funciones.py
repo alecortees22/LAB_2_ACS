@@ -5,6 +5,7 @@
 # -- repositorio: https://github.com/alecortees22/LAB_2_ACS
 # -- ------------------------------------------------------------------------------------ -- #
 import pandas as pd
+import numpy as np
 
 # ----------------- Funcion para mandar llamar archivo y acomodarlo a mi conveniencia--------------
 def f_leer_archivo(param_archivo):
@@ -50,3 +51,16 @@ def f_columns_pips(param_data):
         return pips
     param_data['pips'] = list([pips_by_trade(param_data.iloc[i]) for i in range(len(param_data))])
     return param_data
+
+def f_estadisticas_ba(param_data):
+    ops_totales = len(param_data)
+    ganadoras = np.sum(param_data['profit'] > 0)
+    ganadoras_c = (np.where(param_data['profit'] > 0, param_data['type'] == 'buy', 0).sum())
+    ganadoras_v = (np.where(param_data['profit'] > 0, param_data['type'] == 'sell', 0).sum())
+    perdedoras = np.sum(param_data['profit'] < 0)
+    perdedoras_c = (np.where(param_data['profit'] < 0, param_data['type'] == 'buy', 0).sum())
+    perdedoras_v = (np.where(param_data['profit'] < 0, param_data['type'] == 'sell', 0).sum())
+    media_p = param_data['profit'].median()
+    media_pips = param_data['pips'].median()
+    
+    return media_pips
