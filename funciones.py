@@ -62,5 +62,5 @@ def f_estadisticas_ba(param_data):
     perdedoras_v = (np.where(param_data['profit'] < 0, param_data['type'] == 'sell', 0).sum())
     media_p = param_data['profit'].median()
     media_pips = param_data['pips'].median()
-    
+
     return media_pips
