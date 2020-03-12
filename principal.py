@@ -7,7 +7,7 @@
 
 import funciones as fn
 import pandas as pd
-df_data = fn.f_leer_archivo(param_archivo='Statement_1.xlsx')
+df_data = fn.f_leer_archivo(param_archivo='archivo_profe.xlsx')
 time = fn.f_columns_datos(df_data)
 pips = fn.f_columns_pips(df_data)
-win = fn.f_estadisticas_ba(df_data)
+estadisticas = fn.f_estadisticas_ba(df_data)

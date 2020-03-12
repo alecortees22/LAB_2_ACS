@@ -9,7 +9,7 @@ import numpy as np
 
 # ----------------- Funcion para mandar llamar archivo y acomodarlo a mi conveniencia--------------
 def f_leer_archivo(param_archivo):
-    param_archivo = 'Statement_1.xlsx'
+    param_archivo = 'archivo_profe.xlsx'
     df_data = pd.read_excel('archivos/' + param_archivo, sheet_name='Statement')
     # elegir solo renglones en los que la columna type == buy | type == 'sell'
     df_data = df_data.loc[df_data['type']!='balance']
@@ -28,7 +28,9 @@ def f_pip_size(param_ins):
     inst = param_ins
     # Lista de pips por instrumento
     pips_inst = {'usdjpy-2': 100, 'eurusd-2': 10000, 'eurcad-2': 10000, 'eurgbp-2': 10000, 'usdcad-2': 10000,
-                 'audusd-2': 10000, 'audjpy-2': 100, 'gbpusd-2': 10000, 'eurjpy-2': 100}
+                 'audusd-2': 10000, 'audjpy-2': 100, 'gbpusd-2': 10000, 'eurjpy-2': 100, 'xauusd': 10000,
+                 'eurjpy': 100, 'eurusd': 10000, 'gbpusd': 10000, 'btcusd': 10000, 'eurgbp': 10000,
+                 'gbpjpy': 100, 'usdcad': 10000, 'usdjpy': 100, 'usdmxn': 10000, 'audusd': 10000}
 
     return pips_inst[inst]
 
@@ -53,6 +55,7 @@ def f_columns_pips(param_data):
     return param_data
 
 def f_estadisticas_ba(param_data):
+    # Creacion de las funciones y DataFrame para tabla estadística
     ops_totales = len(param_data)
     ganadoras = np.sum(param_data['profit'] > 0)
     ganadoras_c = (np.where(param_data['profit'] > 0, param_data['type'] == 'buy', 0).sum())
@@ -62,5 +65,24 @@ def f_estadisticas_ba(param_data):
     perdedoras_v = (np.where(param_data['profit'] < 0, param_data['type'] == 'sell', 0).sum())
     media_p = param_data['profit'].median()
     media_pips = param_data['pips'].median()
+    r_efectividad = ops_totales/ganadoras
+    r_proporcion = ganadoras/perdedoras
+    r_efectividad_c = ops_totales/ganadoras_c
+    r_efectividad_v = ops_totales/ganadoras_v
+    pd_data = {'Medida': ['Ops Totales', 'Ganadoras', 'Ganadoras_c', 'Ganadoras_v', 'Perdedoras',
+                               'Perdedoras_c', 'Perdedoras_v', 'Media(Profit)', 'Media(Pips)', 'r_efectividad',
+                               'r_proporcion', 'r_efectividad_c', 'r_efectividad_v'],
+               'Valor': [ops_totales, ganadoras, ganadoras_c, ganadoras_v, perdedoras, perdedoras_c, perdedoras_v,
+                              media_p, media_pips, r_efectividad, r_proporcion, r_efectividad_c, r_efectividad_v],
+               'Descripción': ['Operaciones totales', 'Operaciones ganadas', 'Operaciones ganadoras de compra',
+                               'Operaciones ganadoras de venta', 'Operaciones perdedoras',
+                               'Operaciones perdedoras de compra', 'Operaciones perdedoras de venta',
+                               'Mediana de profit de operaciones', 'Mediana de pips de operaciones',
+                               'Ganadoras Totales/Operaciones Totales', 'Perdedoras Totales/Ganadoras Totales',
+                               'Ganadoras Compras/Operaciones Totales', 'Ganadoras Ventas/Operaciones Totales']}
+    df_1_tabla = pd.DataFrame(pd_data)
+    # Creacion de DataFrame para los rankings
 
-    return media_pips
+    # Creacion del directorio
+    directory = {'df_1_tabla': df_1_tabla, 'df_1_ranking': df_1_ranking}
+    return directory
