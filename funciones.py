@@ -9,7 +9,7 @@ import numpy as np
 
 # ----------------- Funcion para mandar llamar archivo y acomodarlo a mi conveniencia--------------
 def f_leer_archivo(param_archivo):
-    param_archivo = 'archivo_profe.xlsx'
+    param_archivo = 'Statement_1.xlsx'
     df_data = pd.read_excel('archivos/' + param_archivo, sheet_name='Statement')
     # elegir solo renglones en los que la columna type == buy | type == 'sell'
     df_data = df_data.loc[df_data['type']!='balance']
@@ -82,7 +82,14 @@ def f_estadisticas_ba(param_data):
                                'Ganadoras Compras/Operaciones Totales', 'Ganadoras Ventas/Operaciones Totales']}
     df_1_tabla = pd.DataFrame(pd_data)
     # Creacion de DataFrame para los rankings
+    instrumentos = np.unique(param_data['symbol'])
+    instrumentos_u = list()
+    for i in range(len(param_data.index)):
+        for j in range(len(instrumentos)):
+            if param_data['symbol'][i] == instrumentos[j]:
+                instrumentos_u.append()
 
-    # Creacion del directorio
-    directory = {'df_1_tabla': df_1_tabla, 'df_1_ranking': df_1_ranking}
-    return directory
+
+    # Creacion del diccionario
+    dictionary = {'df_1_tabla': df_1_tabla}
+    return instrumentos
