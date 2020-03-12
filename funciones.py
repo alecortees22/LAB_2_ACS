@@ -9,7 +9,7 @@ import numpy as np
 
 # ----------------- Funcion para mandar llamar archivo y acomodarlo a mi conveniencia--------------
 def f_leer_archivo(param_archivo):
-    param_archivo = 'archivo_profe.xlsx'
+    param_archivo = 'Statement_1.xlsx'
     df_data = pd.read_excel('archivos/' + param_archivo, sheet_name='Statement')
     # elegir solo renglones en los que la columna type == buy | type == 'sell'
     df_data = df_data.loc[df_data['type']!='balance']
