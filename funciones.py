@@ -52,6 +52,8 @@ def f_columns_pips(param_data):
             pips = (trade['openprice'] - trade['closeprice']) * f_pip_size(trade['symbol'])
         return pips
     param_data['pips'] = list([pips_by_trade(param_data.iloc[i]) for i in range(len(param_data))])
+    return param_data
+def f_columns_pips_acm(param_data):
     param_data['pips_acm'] = param_data['pips'].cumsum()
     param_data['profit_acm'] = param_data['profit'].cumsum()
     return param_data
