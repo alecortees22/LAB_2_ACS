@@ -103,3 +103,8 @@ def f_estadisticas_ba(param_data):
     # Creacion del diccionario
     dictionary = {'df_1_tabla': df_1_tabla, 'df_1_ranking': df_1_ranking}
     return dictionary
+
+def f_estadisticas_mad(param_data):
+    # Creamos una columna en el DataFrame que calcule el valor de la cuenta en cada movimiento iniciandola en 5000 y (+/-) el profit acumulado
+    param_data['capital_acm'] = param_data['profit_acm']+5000
+    return param_data
