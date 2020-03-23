@@ -6,10 +6,11 @@
 # -- ------------------------------------------------------------------------------------ -- #
 import pandas as pd
 import numpy as np
+import dateutil as du
 
 # ----------------- Funcion para mandar llamar archivo y acomodarlo a mi conveniencia--------------
 def f_leer_archivo(param_archivo):
-    param_archivo = 'Statement_1.xlsx'
+    param_archivo = 'archivo_profe.xlsx'
     df_data = pd.read_excel('archivos/' + param_archivo, sheet_name='Statement')
     # elegir solo renglones en los que la columna type == buy | type == 'sell'
     df_data = df_data.loc[df_data['type']!='balance']
@@ -107,4 +108,7 @@ def f_estadisticas_ba(param_data):
 def f_estadisticas_mad(param_data):
     # Creamos una columna en el DataFrame que calcule el valor de la cuenta en cada movimiento iniciandola en 5000 y (+/-) el profit acumulado
     param_data['capital_acm'] = param_data['profit_acm']+5000
+    param_data['Dates'] = param_data['closetime'].astype(str).str[0:10]
+    total_dates = pd.date_range(start=param_data['Dates'][0], end=param_data['Dates'].iloc[-1]).tolist()
+
     return param_data
