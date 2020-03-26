@@ -6,8 +6,7 @@
 # -- ------------------------------------------------------------------------------------ -- #
 import pandas as pd
 import numpy as np
-import dateutil as du
-
+from datetime import datetime
 # ----------------- Funcion para mandar llamar archivo y acomodarlo a mi conveniencia--------------
 def f_leer_archivo(param_archivo):
     param_archivo = 'archivo_profe.xlsx'
@@ -108,7 +107,22 @@ def f_estadisticas_ba(param_data):
 def f_estadisticas_mad(param_data):
     # Creamos una columna en el DataFrame que calcule el valor de la cuenta en cada movimiento iniciandola en 5000 y (+/-) el profit acumulado
     param_data['capital_acm'] = param_data['profit_acm']+5000
-    param_data['Dates'] = param_data['closetime'].astype(str).str[0:10]
-    total_dates = pd.date_range(start=param_data['Dates'][0], end=param_data['Dates'].iloc[-1]).tolist()
-
-    return param_data
+    #####################
+    param_data['dates'] = param_data['closetime'].astype(str).str[0:10]
+    total_days = pd.date_range(start=param_data['dates'][0],
+                               end=pd.to_datetime(param_data['dates']).max()).astype(str).str[0:10]
+    profit_d1 = param_data.groupby('dates')['profit'].sum()
+    profit_index = profit_d1.index
+    n = len(total_days)-len(profit_d1)
+    profit_d1 = (np.pad(np.array(profit_d1), (0, n), 'constant')).astype(str)
+    profit_index = (np.pad(np.array(profit_index),  (0, n), 'constant')).astype(str)
+    df = pd.DataFrame(total_days, columns=['timestamp'])
+    df['profit_d'] = '0'
+    for i in range(len(df['timestamp'])):
+        if df['timestamp'][i] == profit_index[i]:
+            df['profit_d'][i] = profit_d1[i]
+        else:
+            df['profit_d'][i] = '0'
+    return df
+# timedelta para tiempo bursatil, primera fecha en que cerré operacion, ultima fecha, contar dias que pasaron entre esas dos fechas
+# Checar index volver a acomodarlo
