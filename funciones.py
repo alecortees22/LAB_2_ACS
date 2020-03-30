@@ -107,22 +107,22 @@ def f_estadisticas_ba(param_data):
 def f_estadisticas_mad(param_data):
     # Creamos una columna en el DataFrame que calcule el valor de la cuenta en cada movimiento iniciandola en 5000 y (+/-) el profit acumulado
     param_data['capital_acm'] = param_data['profit_acm']+5000
-    #####################
-    param_data['dates'] = param_data['closetime'].astype(str).str[0:10]
-    total_days = pd.date_range(start=param_data['dates'][0],
-                               end=pd.to_datetime(param_data['dates']).max()).astype(str).str[0:10]
-    profit_d1 = param_data.groupby('dates')['profit'].sum()
-    profit_index = profit_d1.index
-    n = len(total_days)-len(profit_d1)
-    profit_d1 = (np.pad(np.array(profit_d1), (0, n), 'constant')).astype(str)
-    profit_index = (np.pad(np.array(profit_index),  (0, n), 'constant')).astype(str)
-    df = pd.DataFrame(total_days, columns=['timestamp'])
-    df['profit_d'] = '0'
-    for i in range(len(df['timestamp'])):
-        if df['timestamp'][i] == profit_index[i]:
-            df['profit_d'][i] = profit_d1[i]
-        else:
-            df['profit_d'][i] = '0'
+    ###############################################################
+    param_data['dates'] = list(param_data['closetime'].astype(str).str[0:10])
+    param_data.sort_values(by='closetime', inplace=True, ascending=True)
+    param_data.reset_index(inplace=True, drop=True)
+    df = pd.DataFrame()
+    start = str(param_data["closetime"].min())[0:10]
+    end = str(param_data["closetime"].max())[0:10]
+
+    date_range = pd.date_range(start=start, end=end, freq='D')
+    df['timestamp'] = list([str(i)[0:10] for i in date_range])
+
+    df['profit_d'] = 0
+    for i in range(len(df)):
+        for j in range(len(param_data)):
+            i=1
+            j=0
+            if df['timestamp'][i] == param_data['dates'][j]:
+                print(param_data['profit'][j])
     return df
-# timedelta para tiempo bursatil, primera fecha en que cerré operacion, ultima fecha, contar dias que pasaron entre esas dos fechas
-# Checar index volver a acomodarlo
