@@ -14,4 +14,4 @@ estadisticas = fn.f_estadisticas_ba(df_data)
 eurusd = fn.f_pip_size('eurusd-2')
 pd = fn.f_profit_diario(df_data)
 mad = fn.f_estadisticas_mad(df_data)
-
+seg_cog = fn.f_be_de(df_data)
