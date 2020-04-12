@@ -26,6 +26,7 @@ def f_leer_archivo(param_archivo):
        ---------
        param_archivo = 'Statement_1.xlsx'
        '''
+    # Mandamos llamar el archivo que contiene el historico de trading a estudiar
     param_archivo = 'archivo_profe.xlsx'
     df_data = pd.read_excel('archivos/' + param_archivo, sheet_name='Statement')
     # elegir solo renglones en los que la columna type == buy | type == 'sell'
@@ -55,6 +56,8 @@ def f_pip_size(param_ins):
          """
     inst = param_ins
     # Lista de pips por instrumento
+    # Identificamos el valor de pips según los tipos de cierre que se ven involucrados en la divisa
+    # Todos los que tengan usd serán con 100
     pips_inst = {'usdjpy-2': 100, 'eurusd-2': 10000, 'eurcad-2': 10000, 'eurgbp-2': 10000, 'usdcad-2': 10000,
                  'audusd-2': 10000, 'audjpy-2': 100, 'gbpusd-2': 10000, 'eurjpy-2': 100, 'xauusd': 10000,
                  'eurjpy': 100, 'eurusd': 10000, 'gbpusd': 10000, 'btcusd': 10000, 'eurgbp': 10000,
@@ -109,7 +112,7 @@ def f_columns_pips(param_data):
         else:
             pips = (trade['openprice'] - trade['closeprice']) * f_pip_size(trade['symbol'])
         return pips
-    # Agreamos una columna con el total de pips calculados
+    # Agregamos una columna con el total de pips calculados
     param_data['pips'] = list([pips_by_trade(param_data.iloc[i]) for i in range(len(param_data))])
     # Obtenemos una suma acumulativa de estos pips obtenidos y los agregamos a una columna nueva
     param_data['pips_acm'] = param_data['pips'].cumsum()
@@ -513,15 +516,26 @@ def f_be_de(param_data):
     # Ahora empezamos evaluando los distintos escenarios donde se puede ir presentandoe el sesgo cognitivo utilizando
     # ancla y el ejemplo encontrado en bibilografía web
     # Creamos valores para ganadoras y perdedoras y asignamos al diccionario
+    # Creamos el diccionario
     diccionario = {'Ocurrencias':
-                       {'TimeStamp': {}, 'Operaciones': {}}}
+                       {'TimeStamp': {}, 'Operaciones': {}},
+                   'Resultados': {}}
+    # Iniciamos todas las variables en 0
     oc = 0
     op = 0
     gn = 0
+    # Tenemos que iniciar un contador en cero para status quo y aversion a la pérdida
+    # me base en apuntes de métodos númericos
+    s_q = 0
+    ave_per = 0
+    # Decidí ponerle un nombre más pequeño a ganadoras y perdedoras por practicidad
+    # Además de que convierto a str closetime de ambas para poder comparar más adelante
     g = ganadoras
     g['closetime'] = list([str(i)[0:10] for i in g['closetime']])
     p = perdedoras
     p['closetime'] = list([str(i)[0:10] for i in p['closetime']])
+    # Creo las condiciones necesarias para saber si había una operación perdedora abierta al momento de cerrar
+    # una ganadora, lo cual, me indicaría existencia de Disposition Effect
     for i in range(len(g)):
         for j in range(len(p)):
             # hacemos las dos variables de la misma longitud para poder comparar
@@ -529,8 +543,11 @@ def f_be_de(param_data):
             start = p['opentime'][j]
             end = p['closetime'][j]
             total_days = pd.date_range(start=start, end=end, freq='D')
+            # Tenemos que ver si en el momento que la ganadora cerró estaba abierta la operación perdedora en cuestión
             if g['closetime'][i] in total_days:
+                # Le agregamos al contador que nos va a ir midiendo el número de ocurrencias
                 oc += 1
+                # Generamos el diccionario con los valores indicados por el profesor en operaciones
                 op = {'Operaciones': {'Ganadora': {'instrumento': g['symbol'][i], 'volumen': g['size'][i],
                                                    'sentido': g['type'][i],
                                                    'capital_ganadora': g['profit'][i]},
@@ -540,10 +557,37 @@ def f_be_de(param_data):
                       'ratio_cp_capital_acm': p['profit'][j] / g['capital_acm'][i],
                       'ratio_cg_capital_acm': g['profit'][i] / g['capital_acm'][i],
                       'ratio_cp_cg': p['profit'][j] / g['profit'][i]}
+                # Ahora tenemos que agregarle el parámetro TimeStamp al diccionario
                 gn = {'TimeStamp': g['closetime'][i]}
-                # Me apoye en este punto en videos de Youtube explicativos de como usar diccionarios en Python
+                # Ahora pasamos a calcular los datos necesarios para la asignación de la otra rama central
+                # del diccionario, "Resultados"
+                # Primero calculamos status quo
+                if i == 0:
+                    if p['profit'][j] / 5000 < g['profit'][i] / 5000:
+                        s_q += 1
+                    elif p['profit'][j] / param_data['capital_acm'][i] < g['profit'][i] / param_data['capital_acm'][i-1]:
+                        s_q += 1
+                # Después, calculamos aversión a la pérdida
+                if p['profit'][j] / g['profit'][i]:
+                    ave_per += 1
+            # Me apoye en este punto en videos de Youtube explicativos de como usar diccionarios en Python
+            # Aqui concatene la palabra Ocurrencia con el número de ocurrencia en cuestión, ya que así lo pedía el
+            # profesor, además de que tuve que convertirlo en str
             n_oc = 'Ocurrencia, %s' % str(oc)
+            # Asigno los valores encontrados al diccionario anteriormente encontrado
             diccionario['Ocurrencias']['Operaciones'][n_oc] = op
             diccionario['Ocurrencias']['TimeStamp'][n_oc] = gn
+
+
+    # Asignamos el número de ocurrencias a la rama de cantidad del diccionario creado al principio
+    diccionario['Cantidad'] = oc
+    # Sacamos el porcentaje de cada métrica calculada respecto a ocurrencias en %
+    status_quo = (s_q/oc)*100
+    ave_per = (ave_per/oc)*100
+    # La sensibilidad decreciente no supe hacerla
+    mad_data = {'Ocurrencias': [oc], 'Status Quo': [status_quo],
+                'Aversión a la pérdida': [ave_per]}
+    diccionario['Resultados'] = pd.DataFrame(mad_data)
+
 
     return diccionario
