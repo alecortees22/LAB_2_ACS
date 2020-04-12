@@ -10,6 +10,7 @@ from oandapyV20 import API                                # conexion con broker 
 import oandapyV20.endpoints.instruments as instruments    # informacion de precios historico
 import pandas_datareader.data as web
 from datetime import datetime
+from datetime import timedelta
 # ----------------- Funcion para mandar llamar archivo y acomodarlo a mi conveniencia--------------
 # -- ------------------------------------------------------------------------------------ -- #
 # -- Leer un archivo externo en Excel
@@ -431,7 +432,9 @@ def f_estadisticas_mad(param_data):
     OA_In = "SPX500_USD"  # Instrumento
     OA_Gn = "D"  # Granularidad de velas
     fini = pd.to_datetime(param_data['dates'].min()).tz_localize('GMT')  # Fecha inicial
+    fini = fini + timedelta(days=1)
     ffin = pd.to_datetime(param_data['dates'].max()).tz_localize('GMT')  # Fecha final
+    ffin = ffin + timedelta(days=3)
 
     df_pe = f_precios_masivos(p0_fini=fini, p1_ffin=ffin, p2_gran=OA_Gn,
                               p3_inst=OA_In, p4_oatk=OA_Ak, p5_ginc=4900)
@@ -445,12 +448,12 @@ def f_estadisticas_mad(param_data):
     r_sp = np.log(close / close.shift(1)).iloc[1:]
     rp_sp = r_sp.mean()
     # Eliminamos los trades realizados en domingo y sabado por que S&P solo opera de lunes a viernes
-    df['weekday'] = '-'
+    df['wd'] = '-'
     for i in range(len(df)):
-        new_date = df['timestamp'][i]
-        new_date = pd.to_datetime(new_date)
-        df['weekday'][i] = new_date.weekday()
-    df = df.loc[(df['weekday'] != 6) & (df['weekday'] != 5)]
+        n_d= df['timestamp'][i]
+        n_d = pd.to_datetime(n_d)
+        df['wd'][i] = n_d.weekday()
+    df = df.loc[df['wd'] != 5]
     df = df.reset_index(drop=True)
     r_weekday = np.log(df['profit_acm_d'] / df['profit_acm_d'].shift(1)).iloc[1:]
     rp_weekday = r_weekday.mean()
@@ -487,32 +490,60 @@ def f_be_de(param_data):
 
     # Siguiendo las recomendaciones del profesor calculamos el ratio de ganadoras y perdedoras respecto al capital
     # Trabajamos en el mismo DataFrame que contiene el histórico de operaciones
+    # Primero comparamos la columna de profit por operacion contra 5000 que fue el valor con el que inciamos la cuenta
+    # Despues va a ser contra el capital acumulado en la operacion anterior
+    # Inicializamos columna en 0 porque si no nos deja correr el if
     param_data['ratio_capital_acm'] = 0
-    param_data['ratio_capital_acm'] = [(param_data['profit'][i] / 5000) * 100 if i == 0 else
-                                       (param_data['profit'][i] / param_data['capital_acm'][i - 1]) * 100
-                                       for i in range(len(param_data))]
+    for i in range(len(param_data)):
+        if i == 0:
+            param_data['ratio_capital_acm'] = (param_data['profit'][i]/5000)*100
+        else:
+            param_data['ratio_capital_acm'] = (param_data['profit'][i]/param_data['capital_acm'][i-1]) * 100
 
-    # Separamos las operaciones en perdedoras y ganadoras en close y open respectivamente
+    # Separamos las operaciones en perdedoras y ganadoras para posteriormente usar las ganadoras como ancla
     ganadoras = param_data[param_data['profit'] > 0]
+    # Y guardamos el cierre de operaciones de las ganadoras
+    ganadoras_ct = ganadoras['closetime']
+    # Tambien sacamos las perdedoras por si las necesitamos más adelante
     perdedoras = param_data[param_data['profit'] < 0]
-    close_g = param_data[param_data['profit'] > 0]['closetime']
-    close_p = param_data[param_data['profit'] < 0]['closetime']
-    open_g = param_data[param_data['profit'] > 0]['opentime']
-    open_p = param_data[param_data['profit'] < 0]['opentime']
-
     # Como sabemos que nuestra ancla van a ser las operaciones ganadoras las separamos del resto y creamos un DF
     # Pero primero reseteamos el índice para futuros problemas de indexación
     ganadoras.reset_index(inplace=True, drop=True)
-    # Ahora encontramos las ocurrencias del sesgo en nuestra ancla
-    param_data['opentime'] = param_data['opentime'].astype(str).str[0:10]
-    ganadoras['opentime'] = ganadoras['opentime'].astype(str).str[0:10]
-    ganadoras['closetime'] = ganadoras['closetime'].astype(str).str[0:10]
+    perdedoras.reset_index(inplace=True, drop=True)
+    # Ahora empezamos evaluando los distintos escenarios donde se puede ir presentandoe el sesgo cognitivo utilizando
+    # ancla y el ejemplo encontrado en bibilografía web
+    # Creamos valores para ganadoras y perdedoras y asignamos al diccionario
+    diccionario = {'Ocurrencias':
+                       {'TimeStamp': {}, 'Operaciones': {}}}
     oc = 0
-    oc = [[param_data.iloc[i, :] for i in range(len(param_data)) if param_data['opentime'][i]
-          < ganadoras['opentime'][j] and param_data['closetime'][i] > ganadoras['closetime'][j] or
-          ganadoras['opentime'][j] < param_data['opentime'][i] < ganadoras['closetime'][j] <
-          param_data['closetime'][i]] for j in range(len(ganadoras))]
+    op = 0
+    gn = 0
+    g = ganadoras
+    g['closetime'] = list([str(i)[0:10] for i in g['closetime']])
+    p = perdedoras
+    p['closetime'] = list([str(i)[0:10] for i in p['closetime']])
+    for i in range(len(g)):
+        for j in range(len(p)):
+            # hacemos las dos variables de la misma longitud para poder comparar
+            # Asi que nos basamos en la operacion perdedora y su tiempo de ejercicio
+            start = p['opentime'][j]
+            end = p['closetime'][j]
+            total_days = pd.date_range(start=start, end=end, freq='D')
+            if g['closetime'][i] in total_days:
+                oc += 1
+                op = {'Operaciones': {'Ganadora': {'instrumento': g['symbol'][i], 'volumen': g['size'][i],
+                                                   'sentido': g['type'][i],
+                                                   'capital_ganadora': g['profit'][i]},
+                                      'Perdedora': {'instrumento': p['symbol'][j], 'volumen': p['size'][j],
+                                                    'sentido': p['type'][j],
+                                                    'capital_perdedora': p['profit'][j]}},
+                      'ratio_cp_capital_acm': p['profit'][j] / g['capital_acm'][i],
+                      'ratio_cg_capital_acm': g['profit'][i] / g['capital_acm'][i],
+                      'ratio_cp_cg': p['profit'][j] / g['profit'][i]}
+                gn = {'TimeStamp': g['closetime'][i]}
+                # Me apoye en este punto en videos de Youtube explicativos de como usar diccionarios en Python
+            n_oc = 'Ocurrencia, %s' % str(oc)
+            diccionario['Ocurrencias']['Operaciones'][n_oc] = op
+            diccionario['Ocurrencias']['TimeStamp'][n_oc] = gn
 
-
-
-    return oc
+    return diccionario
