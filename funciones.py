@@ -11,6 +11,8 @@ import oandapyV20.endpoints.instruments as instruments    # informacion de preci
 import pandas_datareader.data as web
 from datetime import datetime
 from datetime import timedelta
+import plotly.graph_objects as go
+import plotly.offline as py
 # ----------------- Funcion para mandar llamar archivo y acomodarlo a mi conveniencia--------------
 # -- ------------------------------------------------------------------------------------ -- #
 # -- Leer un archivo externo en Excel
@@ -27,7 +29,7 @@ def f_leer_archivo(param_archivo):
        param_archivo = 'Statement_1.xlsx'
        '''
     # Mandamos llamar el archivo que contiene el historico de trading a estudiar
-    param_archivo = 'archivo_profe.xlsx'
+    param_archivo = 'Statement_1.xlsx'
     df_data = pd.read_excel('archivos/' + param_archivo, sheet_name='Statement')
     # elegir solo renglones en los que la columna type == buy | type == 'sell'
     df_data = df_data.loc[df_data['type']!='balance']
@@ -529,11 +531,15 @@ def f_be_de(param_data):
     s_q = 0
     ave_per = 0
     # Decidí ponerle un nombre más pequeño a ganadoras y perdedoras por practicidad
-    # Además de que convierto a str closetime de ambas para poder comparar más adelante
+    # Además de que convierto a str closetime y opentime de ambas para poder comparar más adelante
     g = ganadoras
     g['closetime'] = list([str(i)[0:10] for i in g['closetime']])
     p = perdedoras
     p['closetime'] = list([str(i)[0:10] for i in p['closetime']])
+    # Tuve que agregar esta linea para que en mi archivo tuviera ocurrencias, quitando las horas, de lo contrario
+    # Obtenia 0 ocurrencias y me daba error en status quo, eso aumentó las ocurrencias en el del profesor, si
+    # no la hubiera puesto me hubiera dado 25 en la del profesor
+    p['opentime'] = list([str(i)[0:10] for i in p['opentime']])
     # Creo las condiciones necesarias para saber si había una operación perdedora abierta al momento de cerrar
     # una ganadora, lo cual, me indicaría existencia de Disposition Effect
     for i in range(len(g)):
@@ -561,14 +567,10 @@ def f_be_de(param_data):
                 gn = {'TimeStamp': g['closetime'][i]}
                 # Ahora pasamos a calcular los datos necesarios para la asignación de la otra rama central
                 # del diccionario, "Resultados"
-                # Primero calculamos status quo
-                if i == 0:
-                    if p['profit'][j] / 5000 < g['profit'][i] / 5000:
-                        s_q += 1
-                    elif p['profit'][j] / param_data['capital_acm'][i] < g['profit'][i] / param_data['capital_acm'][i-1]:
-                        s_q += 1
-                # Después, calculamos aversión a la pérdida
-                if p['profit'][j] / g['profit'][i]:
+                # Primero calculamos status quo tomando en cuenta el capital acm del ancla en el momento de la ocurrencia
+                if np.abs(p['profit'][j] / g['capital_acm'][i]) < np.abs(g['profit'][i] / g['capital_acm'][i]):
+                    s_q += 1
+                if np.abs(p['profit'][j] / g['profit'][i]) > 1.5:
                     ave_per += 1
             # Me apoye en este punto en videos de Youtube explicativos de como usar diccionarios en Python
             # Aqui concatene la palabra Ocurrencia con el número de ocurrencia en cuestión, ya que así lo pedía el
@@ -584,9 +586,21 @@ def f_be_de(param_data):
     # Sacamos el porcentaje de cada métrica calculada respecto a ocurrencias en %
     status_quo = (s_q/oc)*100
     ave_per = (ave_per/oc)*100
-    # La sensibilidad decreciente no supe hacerla
+    # Por último, nos dedicamos a sacar la sensibilidad decreciente
+    # Evaluamos la primer condición, viendo si el capital_acm aumentó usando la posición 0 y la última porque
+    # así lo indicó el profesor
+    # La segunda condición de ver si el profit en la primera y en la última aumentaron (perdedoras y ganadoras)
+    # Y, tercera, ver si capital_perdedora/capital_ganadora > 1.5
+    sen_dec = '-'
+    if g['capital_acm'][0] < g['capital_acm'].iloc[-1] and g['profit'][0] < g['profit'].iloc[-1] or p['profit'][0] < p['profit'].iloc[-1] and (p['profit'].min()/g['profit'].max()) > 1.5:
+        sen_dec = 'Sí'
+    else:
+        sen_dec = 'No'
+
+    # Asignamos valores a un nuevo DataFrame que asignamos a la rama de 'Resultados'
     mad_data = {'Ocurrencias': [oc], 'Status Quo': [status_quo],
-                'Aversión a la pérdida': [ave_per]}
+                'Aversión a la pérdida': [ave_per],
+                'Sensibilidad Decreciente': [sen_dec]}
     diccionario['Resultados'] = pd.DataFrame(mad_data)
 
 
